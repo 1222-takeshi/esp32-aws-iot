@@ -1,33 +1,19 @@
 #include <Arduino.h>
-/*
-  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-  Permission is hereby granted, free of charge, to any person obtaining a copy of this
-  software and associated documentation files (the "Software"), to deal in the Software
-  without restriction, including without limitation the rights to use, copy, modify,
-  merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
-  permit persons to whom the Software is furnished to do so.
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-  PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-
 
 #include "secrets.h"
 #include <WiFiClientSecure.h>
 #include <MQTTClient.h>
 #include <ArduinoJson.h>
 #include "WiFi.h"
+#include "ultrasonic.h"
 
 // The MQTT topics that this device should publish/subscribe
 #define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
 #define Trigger_Pin 13
 #define Echo_Pin 12
-int V = 340;
 float distance;
+UltraSonic ultrasonic = UltraSonic(Trigger_Pin, Echo_Pin);
 
 WiFiClientSecure net = WiFiClientSecure();
 MQTTClient client = MQTTClient(256);
@@ -87,13 +73,12 @@ void publishMessage()
 {
   StaticJsonDocument<200> doc;
   doc["time"] = millis();
-  doc["sensor_a0"] = distance;
+  doc["ultrasonic"] = distance;
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer); // print to client
 
   client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
-
 
 void setup()
 {
@@ -103,41 +88,13 @@ void setup()
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  pinMode(Trigger_Pin, OUTPUT);
-  pinMode(Echo_Pin, INPUT);
-  digitalWrite(Trigger_Pin, LOW);
-
   connectAWS();
-}
-
-//Send Trigger pulse
-void sendTrigger()
-{
-  digitalWrite(Trigger_Pin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(Trigger_Pin, LOW);
-}
-
-void getPulseToDistance()
-{
-  while (!digitalRead(Echo_Pin)) {
-  }
-  unsigned long t1 = micros();
-
-  while (digitalRead(Echo_Pin)) {
-  }
-  unsigned long t2 = micros();
-  unsigned long t = t2 - t1;
-  distance = V * t / 20000;
-  Serial.print(distance);
-  Serial.println("cm");
-  delay(100);
 }
 
 void loop()
 {
-  sendTrigger();
-  getPulseToDistance();
+  ultrasonic.sendTrigger();
+  distance = ultrasonic.calcDistance();
   publishMessage();
   client.loop();
   delay(1000);
