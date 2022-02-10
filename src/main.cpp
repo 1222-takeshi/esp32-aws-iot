@@ -1,11 +1,7 @@
-#include <Arduino.h>
+#include <iostream>
 
-#include "secrets.h"
-#include <WiFiClientSecure.h>
-#include <MQTTClient.h>
-#include <ArduinoJson.h>
-#include "WiFi.h"
-#include "ultrasonic.h"
+#include "ultrasonic/ultrasonic.h"
+#include "Connect_AWS/Connect_AWS.h"
 
 // The MQTT topics that this device should publish/subscribe
 #define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
@@ -14,60 +10,7 @@
 #define Echo_Pin 12
 float distance;
 UltraSonic ultrasonic = UltraSonic(Trigger_Pin, Echo_Pin);
-
-WiFiClientSecure net = WiFiClientSecure();
-MQTTClient client = MQTTClient(256);
-
-
-void messageHandler(String & topic, String & payload)
-{
-  Serial.println("incoming: " + topic + " - " + payload);
-
-//  StaticJsonDocument<200> doc;
-//  deserializeJson(doc, payload);
-//  const char* message = doc["message"];
-}
-
-void connectAWS()
-{
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  Serial.println("Connected to Wi-Fi");
-  // Configure WiFiClientSecure to use the AWS IoT device credentials
-  net.setCACert(AWS_CERT_CA);
-  net.setCertificate(AWS_CERT_CRT);
-  net.setPrivateKey(AWS_CERT_PRIVATE);
-
-  // Connect to the MQTT broker on the AWS endpoint we defined earlier
-  client.begin(AWS_IOT_ENDPOINT, 8883, net);
-
-  // Create a message handler
-  client.onMessage(messageHandler);
-
-  Serial.print("Connecting to AWS IOT");
-  Serial.println(THINGNAME);
-
-  while (!client.connect(THINGNAME)) {
-    Serial.print(".");
-    delay(100);
-  }
-
-  if (!client.connected()) {
-    Serial.println("AWS IoT Timeout!");
-    return;
-  }
-
-  // Subscribe to a topic
-  client.subscribe(AWS_IOT_SUBSCRIBE_TOPIC);
-
-  Serial.println("AWS IoT Connected!");
-}
+ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 
 void publishMessage()
 {
@@ -77,7 +20,7 @@ void publishMessage()
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer); // print to client
 
-  client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
+  connect_aws._client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
 
 void setup()
@@ -88,7 +31,7 @@ void setup()
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  connectAWS();
+  connect_aws.connectToAWS();
 }
 
 void loop()
@@ -96,6 +39,6 @@ void loop()
   ultrasonic.sendTrigger();
   distance = ultrasonic.calcDistance();
   publishMessage();
-  client.loop();
+  connect_aws._client.loop();
   delay(1000);
 }

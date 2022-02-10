@@ -1,8 +1,7 @@
 /*
  * ultrasonic.cpp
  */
-#include <Arduino.h>
-#include "ultrasonic.h"
+#include "ultrasonic/ultrasonic.h"
 
 UltraSonic::UltraSonic(uint8_t trigger_pin, uint8_t echo_pin)
 {
