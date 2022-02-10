@@ -1,8 +1,8 @@
 /*
  * ultrasonic.h
  */
-#ifndef ESP32_MQTT_TEST
-#define ESP32_MQTT_TEST
+#ifndef ULTRASONIC_ULTRASONIC_H_
+#define ULTRASONIC_ULTRASONIC_H_
 #include <Arduino.h>
 
 class UltraSonic
@@ -20,4 +20,4 @@ private:
 
 };
 
-#endif
+#endif // ULTRASONIC_ULTRASONIC_H_
