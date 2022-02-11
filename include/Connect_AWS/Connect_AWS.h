@@ -12,7 +12,6 @@
 #include "WiFi.h"
 #include <ESPmDNS.h>
 #include <WiFiUdp.h>
-#include <ArduinoOTA.h>
 class ConnectAWS
 {
 public:
@@ -26,4 +25,4 @@ private:
 
 };
 
-#endif // CONNECT_AWS_CONNECT_AWS_H_
+#endif  // CONNECT_AWS_CONNECT_AWS_H_
