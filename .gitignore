@@ -53,4 +53,4 @@ dkms.conf
 
 .pio
 .vscode
-secret.h
+secrets.h
