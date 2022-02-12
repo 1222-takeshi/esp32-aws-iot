@@ -1,4 +1,4 @@
-# esp32-aws-iot-sample
+# esp32-aws-iot
 This repository supports platformio + ESP32 + AWS-IoT development.
 
 # Requirements
