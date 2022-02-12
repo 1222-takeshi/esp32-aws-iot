@@ -10,7 +10,6 @@
 #include <MQTTClient.h>
 #include <ArduinoJson.h>
 #include "WiFi.h"
-#include <ESPmDNS.h>
 #include <WiFiUdp.h>
 class ConnectAWS
 {

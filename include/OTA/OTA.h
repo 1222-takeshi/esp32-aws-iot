@@ -5,6 +5,7 @@
 #define OTA_OTA_H_
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <ESPmDNS.h>
 
 class OTA
 {

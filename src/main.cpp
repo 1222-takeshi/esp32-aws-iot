@@ -8,13 +8,13 @@
 #define AWS_IOT_PUBLISH_TOPIC "esp32/pub"
 #define ULTRASONIC_PUBLISH_TOPIC "ultrasonic/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
-#define HOSTNAME "myesp32"
 #define Trigger_Pin 13
 #define Echo_Pin 12
 float distance;
+const char * hostname = "myesp32";
 bool use_ultrasonic;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
-OTA ota = OTA(HOSTNAME);
+OTA ota = OTA(hostname);
 
 void publishMessage()
 {
