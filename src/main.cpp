@@ -5,13 +5,14 @@
 #include "OTA/OTA.h"
 
 // The MQTT topics that this device should publish/subscribe
-#define AWS_IOT_PUBLISH_TOPIC   "esp32/pub"
+#define AWS_IOT_PUBLISH_TOPIC "esp32/pub"
+#define ULTRASONIC_PUBLISH_TOPIC "ultrasonic/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
 #define HOSTNAME "myesp32"
 #define Trigger_Pin 13
 #define Echo_Pin 12
 float distance;
-UltraSonic ultrasonic = UltraSonic(Trigger_Pin, Echo_Pin);
+bool use_ultrasonic;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 OTA ota = OTA(HOSTNAME);
 
@@ -19,18 +20,31 @@ void publishMessage()
 {
   StaticJsonDocument<200> doc;
   doc["time"] = millis();
-  doc["ultrasonic"] = distance;
+  doc["sample_message"] = "Hello World";
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer);  // print to client
 
   connect_aws._client.publish(AWS_IOT_PUBLISH_TOPIC, jsonBuffer);
 }
 
+void ultrasonic_publisher()
+{
+  UltraSonic ultrasonic = UltraSonic(Trigger_Pin, Echo_Pin);
+  ultrasonic.sendTrigger();
+  distance = ultrasonic.calcDistance();
+  StaticJsonDocument<200> doc;
+  doc["time"] = millis();
+  doc["ultrasonic"] = distance;
+  char jsonBuffer[512];
+  serializeJson(doc, jsonBuffer);  // print to client
+  connect_aws._client.publish(ULTRASONIC_PUBLISH_TOPIC, jsonBuffer);
+}
 void setup()
 {
   Serial.begin(115200);
   Serial.println("");
   Serial.println("WiFi connected");
+  use_ultrasonic = true;
 
   connect_aws.connectToAWS();
   ota.setupOTA();
@@ -38,8 +52,9 @@ void setup()
 
 void loop()
 {
-  ultrasonic.sendTrigger();
-  distance = ultrasonic.calcDistance();
+  if (use_ultrasonic) {
+    ultrasonic_publisher();
+  }
   publishMessage();
   connect_aws._client.loop();
   ota.loopingOTA();

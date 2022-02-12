@@ -34,6 +34,6 @@ float UltraSonic::calcDistance()
   _distance = _V * t / 20000;
   Serial.print(_distance);
   Serial.println("cm");
-  delay(100);
+  delay(100);  //10Hz
   return _distance;
 }
