@@ -3,10 +3,11 @@
  */
 #include "ultrasonic/ultrasonic.h"
 
-UltraSonic::UltraSonic(uint8_t trigger_pin, uint8_t echo_pin)
+UltraSonic::UltraSonic(uint8_t Trigger_Pin, uint8_t Echo_Pin, String pub_topic)
 {
-  _trigger_pin = trigger_pin;
-  _echo_pin = echo_pin;
+  _trigger_pin = Trigger_Pin;
+  _echo_pin = Echo_Pin;
+  _pub_topic = pub_topic;
   _V = 340.0;
   _distance = 0.0;
   pinMode(_trigger_pin, OUTPUT);
