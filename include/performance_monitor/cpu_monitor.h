@@ -37,7 +37,7 @@ public:
   static void perfTask(void * pvParameters);
 
   void cpu_monitor_setup();
-  void cpu_monitor_publisher();
+  void cpu_monitor_loop();
 
 private:
   SemaphoreHandle_t _xSemaphore0;

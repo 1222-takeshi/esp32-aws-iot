@@ -124,25 +124,16 @@ void CpuMonitor::perfTask(void * pvParameters)
     mess._core0_tick_count = _core0_tick_count;
     mess._core1_tick_count = _core1_tick_count;
     xQueueOverwrite(_xQueue, &mess);
-    delay(5000);
   }
 }
 
-void CpuMonitor::cpu_monitor_publisher()
+void CpuMonitor::cpu_monitor_loop()
 {
   delay(1);
 
   /* Create queue */
   _xQueue = xQueueCreate(1, sizeof(COUNTER_t) );
   configASSERT(_xQueue);
-
-  /* Create Semaphore */
-//   _xSemaphore0 = xSemaphoreCreateBinary();
-//   _xSemaphore1 = xSemaphoreCreateBinary();
-//   _xSemaphore2 = xSemaphoreCreateBinary();
-//   configASSERT(_xSemaphore0);
-//   configASSERT(_xSemaphore1);
-//   configASSERT(_xSemaphore2);
 
   esp_register_freertos_idle_hook(&ApplicationIdleHook);
   esp_register_freertos_tick_hook(&ApplicationTickHook);
@@ -151,36 +142,15 @@ void CpuMonitor::cpu_monitor_publisher()
   esp_register_freertos_tick_hook_for_cpu(&Core0TickHook, 0);
   esp_register_freertos_tick_hook_for_cpu(&Core1TickHook, 1);
   xTaskCreateUniversal(
-    CpuMonitor::monitorTask,
-    "monitor",
-    4096,
-    NULL,
-    2,
-    NULL,
-    APP_CPU_NUM
-  );
-  xTaskCreateUniversal(
     CpuMonitor::perfTask,
     "perfTask",
     4096,
     NULL,
     1,
     NULL,
-    PRO_CPU_NUM
+    APP_CPU_NUM
   );
   perf_count++;
-//   xTaskCreatePinnedToCore(CpuMonitor::monitorTask, "monitor", 4096, NULL, 1, NULL, 1);
-//   xTaskCreatePinnedToCore(CpuMonitor::perfTask, "perf", 4096, NULL, 1, NULL, 0);
-
-//   for (int i = 0; i < 100; i++) {
-//     if ( (i % 4) == 0) {xSemaphoreGive(_xSemaphore1);}
-//     if ( (i % 4) == 1) {xSemaphoreGive(_xSemaphore2);}
-//     if ( (i % 4) == 2) {
-//       xSemaphoreGive(_xSemaphore1);
-//       xSemaphoreGive(_xSemaphore2);
-//     }
-//     vTaskDelay(100 / portTICK_PERIOD_MS);
-//   }
   if (perf_count > 100) {
     vTaskDelete(NULL);
     perf_count = 0;

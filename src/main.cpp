@@ -14,6 +14,7 @@
 float distance;
 const char * hostname = "myesp32";
 bool use_ultrasonic;
+bool use_cpu_monitoring;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 CpuMonitor cpu_monitor = CpuMonitor();
 OTA ota = OTA(hostname);
@@ -31,9 +32,7 @@ void ultrasonicTask(void * pvParameters)
     char jsonBuffer[512];
     serializeJson(doc, jsonBuffer);  // print to client
     connect_aws._client.publish(ULTRASONIC_PUBLISH_TOPIC, jsonBuffer);
-    delay(2000);
   }
-  vTaskDelete(NULL);
 }
 
 void ultrasonic_publisher()
@@ -66,6 +65,7 @@ void setup()
   Serial.println("");
   Serial.println("WiFi connected");
   use_ultrasonic = true;
+  use_cpu_monitoring = false;
 
   connect_aws.connectToAWS();
   ota.setupOTA();
@@ -73,7 +73,9 @@ void setup()
   if (use_ultrasonic) {
     ultrasonic_publisher();
   }
-  cpu_monitor.cpu_monitor_publisher();
+  if (use_cpu_monitoring) {
+    cpu_monitor.cpu_monitor_loop();
+  }
 }
 
 void loop()
