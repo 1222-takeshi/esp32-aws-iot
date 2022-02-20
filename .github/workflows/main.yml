@@ -13,8 +13,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
-    - name: add dummy Header
-      uses: pabio/header-comments@v1.0.5
+    - name: Create dummy secrets.h
+      run: mv .github/secrets.h include/secrets.h
 
     - name: install python
       uses: actions/setup-python@v2
