@@ -82,6 +82,11 @@ void loop()
 {
   samplePublisher();
   connect_aws._client.loop();
+  if (!connect_aws._client.loop()) {
+    connect_aws._client.disconnect();
+    Serial.println("Lost connection to AWS. Trying again.");
+    connect_aws.connectToAWS();
+  }
   ota.loopingOTA();
   delay(1000);
 }
