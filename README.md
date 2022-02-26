@@ -6,12 +6,14 @@ This repository supports platformio + ESP32 + AWS-IoT development.
 - ESP32
 - AWS-IoT account
 - HC-SR04 (If you want to use ultrasonic)
+- BME280 (If you want to use temp and humid sensor)
 
 
 # Included Libraries
 - Connect_AWS
 - OTA
 - ultrasonic (use HC-SR04)
+- temp and humid sensor (use BME280)
 
 # Demo
 
