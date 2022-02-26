@@ -54,4 +54,5 @@ void OTA::setupOTA()
 void OTA::loopingOTA()
 {
   ArduinoOTA.handle();
+  // printf("get ota\n");
 }

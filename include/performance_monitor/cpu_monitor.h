@@ -37,7 +37,12 @@ public:
   static void perfTask(void * pvParameters);
 
   void cpu_monitor_setup();
+  void cpu_monitor_handling();
   void cpu_monitor_loop();
+
+  float CPU_idleRate_;
+  float CORE0_idleRate_;
+  float CORE1_idleRate_;
 
 private:
   SemaphoreHandle_t _xSemaphore0;

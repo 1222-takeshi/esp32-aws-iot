@@ -35,19 +35,17 @@ void BME280Publisher::loop()
   temp_ = mySensor.readTempC();
   discomfort_ = 0.81 * mySensor.readTempC() + 0.01 * mySensor.readFloatHumidity() *
     (0.99 * mySensor.readTempC() - 14.3) + 46.3;
-  printf("looping BME280 module\n");
-  Serial.print("Humidity: ");
-  Serial.print(mySensor.readFloatHumidity());
+  // printf("looping BME280 module\n");
+  // Serial.print("Humidity: ");
+  // Serial.print(mySensor.readFloatHumidity());
 
-  Serial.print(" Pressure: ");
-  Serial.print(mySensor.readFloatPressure(), 2);
+  // Serial.print(" Pressure: ");
+  // Serial.print(mySensor.readFloatPressure(), 2);
 
-  Serial.print(" Alt: ");
-  Serial.print(mySensor.readFloatAltitudeMeters(), 2);
-  //Serial.print(mySensor.readFloatAltitudeFeet(), 1);
-  Serial.print(" Temp: ");
-  Serial.print(mySensor.readTempC());
-  //Serial.print(mySensor.readTempF(), 2);
+  // Serial.print(" Alt: ");
+  // Serial.print(mySensor.readFloatAltitudeMeters(), 2);
+  // Serial.print(" Temp: ");
+  // Serial.print(mySensor.readTempC());
   // Serial.print(" discomfort: ");
   // Serial.print(
   //   0.81 * mySensor.readTempC() + 0.01 * mySensor.readFloatHumidity() *
