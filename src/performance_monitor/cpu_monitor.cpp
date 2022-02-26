@@ -24,6 +24,8 @@ float _CPU_idleRate;
 float _CORE0_idleRate;
 float _CORE1_idleRate;
 
+COUNTER_t mess;
+
 QueueHandle_t _xQueue;
 
 CpuMonitor::CpuMonitor()
@@ -80,30 +82,31 @@ void CpuMonitor::clearHook(void)
   _core1_tick_count = 0;
 }
 
+void CpuMonitor::cpu_monitor_handling()
+{
+  CPU_idleRate_ = _CPU_idleRate;
+  CORE0_idleRate_ = _CORE0_idleRate;
+  CORE1_idleRate_ = _CORE1_idleRate;
+}
+
 void CpuMonitor::monitorTask(void * pvParameters)
 {
-  COUNTER_t mess;
   while (1) {
     xQueueReceive(_xQueue, &mess, portMAX_DELAY);
 
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
     std::cout << "monitor" << std::endl;
     _CPU_idleRate = static_cast<float>(mess._total_idle_count) /
       static_cast<float>(mess._total_tick_count) * 100.0;
     if (_CPU_idleRate > 100.0) {_CPU_idleRate = 100.0;}
-    std::cout << "CPU Idle:" << std::fixed << std::setprecision(2) << _CPU_idleRate << std::endl;
 
     _CORE0_idleRate = static_cast<float>(mess._core0_idle_count) /
       static_cast<float>(mess._core0_tick_count) * 100.0;
     if (_CORE0_idleRate > 100.0) {_CORE0_idleRate = 100.0;}
-    std::cout << "CORE0 Idle:" << std::fixed << std::setprecision(2) << _CORE0_idleRate <<
-      std::endl;
 
     _CORE1_idleRate = static_cast<float>(mess._core1_idle_count) /
       static_cast<float>(mess._core1_tick_count) * 100.0;
     if (_CORE1_idleRate > 100.0) {_CORE1_idleRate = 100.0;}
-    std::cout << "CORE1 Idle:" << std::fixed << std::setprecision(2) << _CORE1_idleRate <<
-      std::endl;
-    delay(5000);
   }   // end while
 
   vTaskDelete(NULL);
@@ -111,8 +114,6 @@ void CpuMonitor::monitorTask(void * pvParameters)
 
 void CpuMonitor::perfTask(void * pvParameters)
 {
-  COUNTER_t mess;
-
   while (1) {
     std::cout << "perf" << std::endl;
     CpuMonitor::clearHook();
@@ -150,6 +151,16 @@ void CpuMonitor::cpu_monitor_loop()
     NULL,
     APP_CPU_NUM
   );
+  xTaskCreateUniversal(
+    CpuMonitor::monitorTask,
+    "monitorTask",
+    4096,
+    NULL,
+    1,
+    NULL,
+    APP_CPU_NUM
+  );
+  CpuMonitor::cpu_monitor_handling();
   perf_count++;
   if (perf_count > 100) {
     vTaskDelete(NULL);
