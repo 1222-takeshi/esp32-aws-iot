@@ -15,6 +15,7 @@ float distance;
 const char * hostname = "myesp32";
 bool use_ultrasonic;
 bool use_cpu_monitoring;
+bool get_publisher;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 CpuMonitor cpu_monitor = CpuMonitor();
 OTA ota = OTA(hostname);
