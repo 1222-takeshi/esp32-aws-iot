@@ -10,6 +10,7 @@
 #define AWS_IOT_PUBLISH_TOPIC "esp32/pub"
 #define ULTRASONIC_PUBLISH_TOPIC "ultrasonic/pub"
 #define BME280_PUBLISH_TOPIC "BME280/pub"
+#define CPU_MONITOR_PUBLISH_TOPIC "cpu_monitor/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
 #define Trigger_Pin 13
 #define Echo_Pin 12
@@ -29,7 +30,6 @@ void ultrasonicTask(void * pvParameters)
     vTaskDelay(2000 / portTICK_PERIOD_MS);
     UltraSonic ultrasonic = UltraSonic(Trigger_Pin, Echo_Pin, ULTRASONIC_PUBLISH_TOPIC);
     ultrasonic.sendTrigger();
-    // distance = ultrasonic.calcDistance();
     StaticJsonDocument<200> doc;
     doc["time"] = millis();
     doc["ultrasonic"] = ultrasonic.calcDistance();
@@ -61,7 +61,7 @@ void bme280Task(void * pvParameters)
 
       BME280_publisher.setup();
       bme280_init_ = true;
-      printf("init BME280");
+      printf("init BME280\n");
     }
     BME280_publisher.loop();
     StaticJsonDocument<200> doc;
@@ -82,6 +82,35 @@ void bme280_publisher()
   xTaskCreateUniversal(
     bme280Task,
     "bme280Task",
+    4096,
+    NULL,
+    2,
+    NULL,
+    APP_CPU_NUM
+  );
+}
+
+
+void cpuMonitorTask(void * pvParameters)
+{
+  while (1) {
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    StaticJsonDocument<200> doc;
+    doc["time"] = millis();
+    doc["CPU Idle"] = cpu_monitor.CPU_idleRate_;
+    doc["CORE0 Idle"] = cpu_monitor.CORE0_idleRate_;
+    doc["CORE1 Idle"] = cpu_monitor.CORE1_idleRate_;
+    char jsonBuffer[512];
+    serializeJson(doc, jsonBuffer);  // print to client
+    connect_aws._client.publish(CPU_MONITOR_PUBLISH_TOPIC, jsonBuffer);
+  }
+}
+
+void cpuMonitor_publisher()
+{
+  xTaskCreateUniversal(
+    cpuMonitorTask,
+    "cpuMonitorTask",
     4096,
     NULL,
     2,
@@ -123,6 +152,7 @@ void setup()
   }
   if (use_cpu_monitoring) {
     cpu_monitor.cpu_monitor_loop();
+    cpuMonitor_publisher();
   }
 }
 
@@ -130,6 +160,9 @@ void loop()
 {
   samplePublisher();
   connect_aws._client.loop();
+  if (use_cpu_monitoring) {
+    cpu_monitor.cpu_monitor_handling();
+  }
   if (!connect_aws._client.loop()) {
     connect_aws._client.disconnect();
     Serial.println("Lost connection to AWS. Trying again.");
