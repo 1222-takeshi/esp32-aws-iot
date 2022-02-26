@@ -15,6 +15,7 @@ float distance;
 const char * hostname = "myesp32";
 bool use_ultrasonic;
 bool use_cpu_monitoring;
+bool get_publisher;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 CpuMonitor cpu_monitor = CpuMonitor();
 OTA ota = OTA(hostname);
@@ -82,6 +83,11 @@ void loop()
 {
   samplePublisher();
   connect_aws._client.loop();
+  if (!connect_aws._client.loop()) {
+    connect_aws._client.disconnect();
+    Serial.println("Lost connection to AWS. Trying again.");
+    connect_aws.connectToAWS();
+  }
   ota.loopingOTA();
   delay(1000);
 }
