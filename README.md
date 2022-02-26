@@ -14,6 +14,8 @@ This repository supports platformio + ESP32 + AWS-IoT development.
 - OTA
 - ultrasonic (use HC-SR04)
 - temp and humid sensor (use BME280)
+- cpu_monitor
+- memory_monitor
 
 # Demo
 
