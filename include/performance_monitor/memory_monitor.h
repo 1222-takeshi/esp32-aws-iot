@@ -1,27 +1,21 @@
-// /*
-//  * Connect_AWS.h
-//  */
-// #ifndef CONNECT_AWS_CONNECT_AWS_H_
-// #define CONNECT_AWS_CONNECT_AWS_H_
-// #include <Arduino.h>
+/*
+ * memory_monitor.h
+ */
+#ifndef PERFORMANCE_MONITOR_MEMORY_MONITOR_H_
+#define PERFORMANCE_MONITOR_MEMORY_MONITOR_H_
+#include <Arduino.h>
 
-// #include "secrets.h"
-// #include <WiFiClientSecure.h>
-// #include <MQTTClient.h>
-// #include <ArduinoJson.h>
-// #include "WiFi.h"
-// #include <WiFiUdp.h>
-// class ConnectAWS
-// {
-// public:
-//   ConnectAWS(String pub_topic, String sub_topic);
-//   void connectToAWS();
-//   MQTTClient _client;
+#include <esp_task_wdt.h>
+#include "performance_monitor/task_manager.h"
+class MemoryMonitor
+{
+public:
+  MemoryMonitor();
+  void setup();
+  void loop();
+  void getMemoryUsage();
+  uint32_t memory_water_mark_;
+  uint32_t free_heap_memory_;
+};
 
-// private:
-//   String _pub_topic;
-//   String _sub_topic;
-
-// };
-
-// #endif  // CONNECT_AWS_CONNECT_AWS_H_
+#endif  // PERFORMANCE_MONITOR_MEMORY_MONITOR_H_
