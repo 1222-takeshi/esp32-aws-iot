@@ -3,6 +3,7 @@
  */
 #ifndef PERFORMANCE_MONITOR_CPU_MONITOR_H_
 #define PERFORMANCE_MONITOR_CPU_MONITOR_H_
+// TODO(1222-takeshi) need arrangement include files
 #include <iostream>
 #include <iomanip>
 #include "freertos/FreeRTOS.h"
