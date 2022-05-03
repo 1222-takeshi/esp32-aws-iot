@@ -2,6 +2,7 @@
 
 #include <performance_monitor/cpu_monitor.h>
 #include <performance_monitor/memory_monitor.h>
+#include <performance_monitor/battery_monitor.h>
 #include <ultrasonic/ultrasonic.h>
 #include <Connect_AWS/Connect_AWS.h>
 #include <OTA/OTA.h>
@@ -13,20 +14,26 @@
 #define BME280_PUBLISH_TOPIC "BME280/pub"
 #define CPU_MONITOR_PUBLISH_TOPIC "cpu_monitor/pub"
 #define MEMORY_MONITOR_PUBLISH_TOPIC "memory_monitor/pub"
+#define BATTERY_MONITOR_PUBLISH_TOPIC "battery_monitor/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
 #define Trigger_Pin 13
 #define Echo_Pin 12
+#define ADCPin 34
+
 float distance;
 const char * hostname = "myesp32";
 bool use_ultrasonic;
 bool use_cpu_monitoring;
 bool use_memory_monitoring;
+bool use_battery_monitoring;
 bool use_bme280;
 bool bme280_init_;
 bool memory_monitor_init_;
+bool battery_monitor_init_;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 CpuMonitor cpu_monitor = CpuMonitor();
 MemoryMonitor memory_monitor = MemoryMonitor();
+BatteryMonitor battery_monitor = BatteryMonitor(ADCPin);
 OTA ota = OTA(hostname);
 
 void ultrasonicTask(void * pvParameters)
@@ -156,6 +163,39 @@ void memoryMonitor_publisher()
   );
 }
 
+void batteryMonitorTask(void * pvParameters)
+{
+  while (1) {
+    if (!battery_monitor_init_) {
+      battery_monitor.setup();
+      battery_monitor_init_ = true;
+      printf("init battery_monitor\n");
+    }
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    // vTaskDelay(600000 / portTICK_PERIOD_MS);
+    StaticJsonDocument<200> doc;
+    doc["time"] = millis();
+    doc["ADC_Voltage"] = battery_monitor.voltage_;
+    doc["ADC_Value"] = battery_monitor.ADC_value_;
+    char jsonBuffer[512];
+    serializeJson(doc, jsonBuffer);  // print to client
+    connect_aws._client.publish(BATTERY_MONITOR_PUBLISH_TOPIC, jsonBuffer);
+  }
+}
+
+void batteryMonitor_publisher()
+{
+  xTaskCreateUniversal(
+    batteryMonitorTask,
+    "batteryMonitorTask",
+    4096,
+    NULL,
+    2,
+    NULL,
+    APP_CPU_NUM
+  );
+}
+
 void samplePublisher()
 {
   StaticJsonDocument<200> doc;
@@ -172,13 +212,15 @@ void setup()
   Serial.begin(115200);
   Serial.println("");
   Serial.println("WiFi connected");
-  use_bme280 = true;
+  use_bme280 = false;
   use_ultrasonic = false;
   use_cpu_monitoring = false;
-  use_memory_monitoring = true;
+  use_memory_monitoring = false;
+  use_battery_monitoring = true;
 
   bme280_init_ = false;
   memory_monitor_init_ = false;
+  battery_monitor_init_ = false;
 
   connect_aws.connectToAWS();
   ota.setupOTA();
@@ -197,6 +239,10 @@ void setup()
     memory_monitor.loop();
     memoryMonitor_publisher();
   }
+  if (use_battery_monitoring) {
+    battery_monitor.loop();
+    batteryMonitor_publisher();
+  }
 
 }
 
@@ -210,6 +256,9 @@ void loop()
   }
   if (use_memory_monitoring) {
     memory_monitor.loop();
+  }
+  if (use_battery_monitoring) {
+    battery_monitor.loop();
   }
   if (!connect_aws._client.loop()) {
     connect_aws._client.disconnect();

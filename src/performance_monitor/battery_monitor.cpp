@@ -1,62 +1,43 @@
-// /*
-//  * Connect_AWS.cpp
-//  */
-// #include "Connect_AWS/Connect_AWS.h"
+/*
+ * battery_monitor.cpp
+ */
+#include "performance_monitor/battery_monitor.h"
 
-// WiFiClientSecure net = WiFiClientSecure();
-// MQTTClient _client = MQTTClient(256);
+const int R1 = 10000;
+const int R2 = 10000;
+const float threshold = 3.06; //1750
+const float max_voltage = 3.3;
 
-// void messageHandler(String & topic, String & payload)
-// {
-//   Serial.println("incoming: " + topic + " - " + payload);
+BatteryMonitor::BatteryMonitor(uint8_t adcPin)
+{
+  adc_pin_ = adcPin;
+}
 
-// //  StaticJsonDocument<200> doc;
-// //  deserializeJson(doc, payload);
-// //  const char* message = doc["message"];
-// }
+void BatteryMonitor::getCurrentVoltage()
+{
+  ADC_value_ = analogRead(adc_pin_);
+  voltage_ = ADC_value_ * (R1 + R2) / R2 * (3.6 / 4095);
+  battery_ = voltage_ / max_voltage * 100;
+  if (voltage_ > threshold) {
+    Serial.print("ADC:");
+    Serial.print(ADC_value_);
+    Serial.print(" Voltage:");
+    Serial.println(voltage_);
+  } else {
+    Serial.println("you should change battery. as soon as possible.");
+  }
+}
 
-// ConnectAWS::ConnectAWS(String pub_topic, String sub_topic)
-// {
-//   _pub_topic = pub_topic;
-//   _sub_topic = sub_topic;
-// }
-// void ConnectAWS::connectToAWS()
-// {
-//   WiFi.mode(WIFI_STA);
-//   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+void BatteryMonitor::setup()
+{
+  esp_task_wdt_init(60, true);    // time in seconds
+  enableLoopWDT();
 
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.print(".");
-//   }
+  delay(100);
+  BatteryMonitor::getCurrentVoltage();
+}
 
-//   Serial.println("Connected to Wi-Fi");
-//   // Configure WiFiClientSecure to use the AWS IoT device credentials
-//   net.setCACert(AWS_CERT_CA);
-//   net.setCertificate(AWS_CERT_CRT);
-//   net.setPrivateKey(AWS_CERT_PRIVATE);
-
-//   // Connect to the MQTT broker on the AWS endpoint we defined earlier
-//   _client.begin(AWS_IOT_ENDPOINT, 8883, net);
-
-//   // Create a message handler
-//   _client.onMessage(messageHandler);
-
-//   Serial.print("Connecting to AWS IOT");
-//   Serial.println(THINGNAME);
-
-//   while (!_client.connect(THINGNAME)) {
-//     Serial.print(".");
-//     delay(100);
-//   }
-
-//   if (!_client.connected()) {
-//     Serial.println("AWS IoT Timeout!");
-//     return;
-//   }
-
-//   // Subscribe to a topic
-//   _client.subscribe(_sub_topic);
-
-//   Serial.println("AWS IoT Connected!");
-// }
+void BatteryMonitor::loop()
+{
+  BatteryMonitor::getCurrentVoltage();
+}
