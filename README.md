@@ -7,6 +7,7 @@ This repository supports platformio + ESP32 + AWS-IoT development.
 - AWS-IoT account
 - HC-SR04 (If you want to use ultrasonic)
 - BME280 (If you want to use temp and humid sensor)
+- resistor (If you want to use battery monitor function)
 
 
 # Included Libraries
@@ -16,6 +17,7 @@ This repository supports platformio + ESP32 + AWS-IoT development.
 - temp and humid sensor (use BME280)
 - cpu_monitor
 - memory_monitor
+- battery_monitor
 
 # Demo
 
