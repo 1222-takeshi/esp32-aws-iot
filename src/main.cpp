@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include <performance_monitor/cpu_monitor.h>
+#include <performance_monitor/memory_monitor.h>
 #include <ultrasonic/ultrasonic.h>
 #include <Connect_AWS/Connect_AWS.h>
 #include <OTA/OTA.h>
@@ -11,6 +12,7 @@
 #define ULTRASONIC_PUBLISH_TOPIC "ultrasonic/pub"
 #define BME280_PUBLISH_TOPIC "BME280/pub"
 #define CPU_MONITOR_PUBLISH_TOPIC "cpu_monitor/pub"
+#define MEMORY_MONITOR_PUBLISH_TOPIC "memory_monitor/pub"
 #define AWS_IOT_SUBSCRIBE_TOPIC "esp32/sub"
 #define Trigger_Pin 13
 #define Echo_Pin 12
@@ -18,10 +20,13 @@ float distance;
 const char * hostname = "myesp32";
 bool use_ultrasonic;
 bool use_cpu_monitoring;
+bool use_memory_monitoring;
 bool use_bme280;
 bool bme280_init_;
+bool memory_monitor_init_;
 ConnectAWS connect_aws = ConnectAWS(AWS_IOT_PUBLISH_TOPIC, AWS_IOT_SUBSCRIBE_TOPIC);
 CpuMonitor cpu_monitor = CpuMonitor();
+MemoryMonitor memory_monitor = MemoryMonitor();
 OTA ota = OTA(hostname);
 
 void ultrasonicTask(void * pvParameters)
@@ -55,7 +60,7 @@ void ultrasonic_publisher()
 void bme280Task(void * pvParameters)
 {
   while (1) {
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
     BME280Publisher BME280_publisher = BME280Publisher();
     if (!bme280_init_) {
 
@@ -90,7 +95,6 @@ void bme280_publisher()
   );
 }
 
-
 void cpuMonitorTask(void * pvParameters)
 {
   while (1) {
@@ -119,6 +123,39 @@ void cpuMonitor_publisher()
   );
 }
 
+void memoryMonitorTask(void * pvParameters)
+{
+  while (1) {
+    if (!memory_monitor_init_) {
+
+      memory_monitor.setup();
+      memory_monitor_init_ = true;
+      printf("init memory_monitor\n");
+    }
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    StaticJsonDocument<200> doc;
+    doc["time"] = millis();
+    doc["Memory Water Mark"] = memory_monitor.memory_water_mark_;
+    doc["Free Heap Memory"] = memory_monitor.free_heap_memory_;
+    char jsonBuffer[512];
+    serializeJson(doc, jsonBuffer);  // print to client
+    connect_aws._client.publish(MEMORY_MONITOR_PUBLISH_TOPIC, jsonBuffer);
+  }
+}
+
+void memoryMonitor_publisher()
+{
+  xTaskCreateUniversal(
+    memoryMonitorTask,
+    "memoryMonitorTask",
+    4096,
+    NULL,
+    2,
+    NULL,
+    APP_CPU_NUM
+  );
+}
+
 void samplePublisher()
 {
   StaticJsonDocument<200> doc;
@@ -138,8 +175,10 @@ void setup()
   use_bme280 = true;
   use_ultrasonic = false;
   use_cpu_monitoring = false;
+  use_memory_monitoring = true;
 
   bme280_init_ = false;
+  memory_monitor_init_ = false;
 
   connect_aws.connectToAWS();
   ota.setupOTA();
@@ -154,6 +193,11 @@ void setup()
     cpu_monitor.cpu_monitor_loop();
     cpuMonitor_publisher();
   }
+  if (use_memory_monitoring) {
+    memory_monitor.loop();
+    memoryMonitor_publisher();
+  }
+
 }
 
 void loop()
@@ -161,7 +205,11 @@ void loop()
   samplePublisher();
   connect_aws._client.loop();
   if (use_cpu_monitoring) {
+    cpu_monitor.cpu_monitor_loop();
     cpu_monitor.cpu_monitor_handling();
+  }
+  if (use_memory_monitoring) {
+    memory_monitor.loop();
   }
   if (!connect_aws._client.loop()) {
     connect_aws._client.disconnect();

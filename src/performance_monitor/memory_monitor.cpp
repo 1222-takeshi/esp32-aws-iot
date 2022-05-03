@@ -1,62 +1,59 @@
-// /*
-//  * Connect_AWS.cpp
-//  */
-// #include "Connect_AWS/Connect_AWS.h"
+/*
+ * memory_monitor.cpp
+ */
+#include "performance_monitor/memory_monitor.h"
 
-// WiFiClientSecure net = WiFiClientSecure();
-// MQTTClient _client = MQTTClient(256);
+MemoryMonitor::MemoryMonitor()
+{
+  memory_water_mark_ = 0;
+  free_heap_memory_ = 0;
+}
 
-// void messageHandler(String & topic, String & payload)
-// {
-//   Serial.println("incoming: " + topic + " - " + payload);
+void MemoryMonitor::getMemoryUsage()
+{
+  static uint32_t m1 = UINT32_MAX, mh = UINT32_MAX;
+  extern TaskHandle_t loopTaskHandle;
+//   extern TaskHandle_t loop2TaskHandle;
 
-// //  StaticJsonDocument<200> doc;
-// //  deserializeJson(doc, payload);
-// //  const char* message = doc["message"];
-// }
-
-// ConnectAWS::ConnectAWS(String pub_topic, String sub_topic)
-// {
-//   _pub_topic = pub_topic;
-//   _sub_topic = sub_topic;
-// }
-// void ConnectAWS::connectToAWS()
-// {
-//   WiFi.mode(WIFI_STA);
-//   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     Serial.print(".");
+  uint32_t m;
+  if (loopTaskHandle != NULL) {
+    m = uxTaskGetStackHighWaterMark(loopTaskHandle);
+    if (m < m1) {
+      m1 = m;
+      memory_water_mark_ = m;
+      Serial.printf(
+        "%s water mark = %d\n", pcTaskGetTaskName(loopTaskHandle),
+        m);
+    }
+  }
+//   if (loop2TaskHandle != NULL) {
+//     m = uxTaskGetStackHighWaterMark(loop2TaskHandle);
+//     if (m < m2) {
+//       m2 = m;
+//       Serial.printf(
+//         "%s water mark = %d\n", pcTaskGetTaskName(loop2TaskHandle),
+//         m);
+//     }
 //   }
+  m = esp_get_minimum_free_heap_size();
+  if (m < mh) {
+    mh = m;
+    free_heap_memory_ = m;
+    Serial.printf("free heap memory = %d\n", m);
+  }
+}
+void MemoryMonitor::setup()
+{
+  esp_task_wdt_init(60, true);  // time in seconds
+  enableLoopWDT();
 
-//   Serial.println("Connected to Wi-Fi");
-//   // Configure WiFiClientSecure to use the AWS IoT device credentials
-//   net.setCACert(AWS_CERT_CA);
-//   net.setCertificate(AWS_CERT_CRT);
-//   net.setPrivateKey(AWS_CERT_PRIVATE);
+  delay(100);
+  MemoryMonitor::getMemoryUsage();
+}
 
-//   // Connect to the MQTT broker on the AWS endpoint we defined earlier
-//   _client.begin(AWS_IOT_ENDPOINT, 8883, net);
-
-//   // Create a message handler
-//   _client.onMessage(messageHandler);
-
-//   Serial.print("Connecting to AWS IOT");
-//   Serial.println(THINGNAME);
-
-//   while (!_client.connect(THINGNAME)) {
-//     Serial.print(".");
-//     delay(100);
-//   }
-
-//   if (!_client.connected()) {
-//     Serial.println("AWS IoT Timeout!");
-//     return;
-//   }
-
-//   // Subscribe to a topic
-//   _client.subscribe(_sub_topic);
-
-//   Serial.println("AWS IoT Connected!");
-// }
+void MemoryMonitor::loop()
+{
+  // put your main code here, to run repeatedly:
+  MemoryMonitor::getMemoryUsage();
+  delay(1000);
+}
